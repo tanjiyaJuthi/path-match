@@ -2,10 +2,10 @@
 const nextConfig = {
   /* config options here */
   reactCompiler: true,
-  // experimental: {
-  //   serverComponentsExternalPackages: ['@better-auth/kysely-adapter'],
-  // },
-  serverExternalPackages: ['@better-auth/kysely-adapter'],
+  experimental: {
+    serverComponentsExternalPackages: ['@better-auth/kysely-adapter'],
+  },
+  // serverExternalPackages: ['@better-auth/kysely-adapter'],
 };
 
 export default nextConfig;
