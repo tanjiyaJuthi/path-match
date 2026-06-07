@@ -2,7 +2,7 @@
 
 import { authClient } from '@/app/lib/auth-client';
 import { useGoogleAuth } from '@/app/lib/helper/utils-client';
-import { Button, Card, Description, FieldError, Form, Input, Label, TextField } from '@heroui/react';
+import { Radio, RadioGroup, Button, Card, Description, FieldError, Form, Input, Label, TextField } from '@heroui/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -33,7 +33,7 @@ const SignUpPage = () => {
                 email: userData.email,
                 password: userData.password,
                 image: userData.imageUrl,
-                wanderLustRole: 'user'
+                role: userData.role
             });
 
             if (error) {
@@ -169,6 +169,30 @@ const SignUpPage = () => {
                                 />
                                 <FieldError />
                             </TextField>
+
+                            <div className="flex flex-col gap-4">
+                                <Label>Your Role</Label>
+                                
+                                <RadioGroup defaultValue="seeker" name="role" orientation="horizontal">
+                                    <Radio selected value="seeker">
+                                        <Radio.Control className="bg-white">
+                                            <Radio.Indicator />
+                                        </Radio.Control>
+                                        <Radio.Content>
+                                            <Label>Job Seeker</Label>
+                                        </Radio.Content>
+                                    </Radio>
+
+                                    <Radio value="recruiter">
+                                        <Radio.Control className="bg-white">
+                                            <Radio.Indicator />
+                                        </Radio.Control>
+                                        <Radio.Content>
+                                            <Label>Recruiter</Label>
+                                        </Radio.Content>
+                                    </Radio>
+                                </RadioGroup>
+                                </div>
 
                             <Button
                                 type="submit"

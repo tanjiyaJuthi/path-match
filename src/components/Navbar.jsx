@@ -53,12 +53,16 @@ export default function Navbar() {
                         {
                             user
                             ?
-                                <Button
-                                    onClick={handleLogout}
-                                    className="rounded-none text-white bg-[#8b5cf6] hover:text-white transition"
-                                >
-                                    Logout
-                                </Button>
+                                <div className="flex items-center gap-2">
+                                    <Button className="bg-[#8b5cf6] ">{user.name[0]}</Button>
+                                    
+                                    <Button
+                                        onClick={handleLogout}
+                                        className="text-white bg-[#8b5cf6] hover:text-white transition"
+                                    >
+                                        Logout
+                                    </Button>
+                                </div>
                             :
                                 <div>
                                     <Link
