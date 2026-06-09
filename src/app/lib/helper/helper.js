@@ -17,3 +17,10 @@ export const formatMonthYear = (date) => {
     year: "numeric",
   });
 };
+
+export const getInitials = (name = "") =>
+  name
+    .split(" ")
+    .map(n => n[0])
+    .join("")
+    .toUpperCase();

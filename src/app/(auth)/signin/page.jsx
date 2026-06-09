@@ -14,10 +14,12 @@ import {
   TextField,
 } from "@heroui/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 
 const LoginPage = () => {
+  const router = useRouter();
   const { handleGoogleAuth, googleLoading } = useGoogleAuth();
   const [isVisible, setIsVisible] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -34,10 +36,14 @@ const LoginPage = () => {
         email: userData.email,
         password: userData.password,
         rememberMe: true,
-        callbackURL: "/",
       });
 
-      if (error) {
+      if (!error) {
+        const redirectPath =
+          data.user.role === "seeker" ? "/job-seeker" : "/recruiter";
+
+        router.push(redirectPath);
+      } else {
         alert(error.message);
       }
     } finally {
