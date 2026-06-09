@@ -39,7 +39,11 @@ export default function SideNav({ collapsed, setCollapsed }) {
       href: user?.role === "seeker" ? "/job-seeker" : "/recruiter",
       icon: LayoutDashboard
     },
-    { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
+    {
+      name: "Jobs",
+      href: user?.role === "seeker" ? "/job-seeker" : "/recruiter/jobs",
+      icon: BarChart3
+    },
     { name: "Profile", href: "/dashboard/profile", icon: Users },
     { name: "Roles", href: "/dashboard/roles", icon: Shield },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
