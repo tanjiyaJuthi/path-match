@@ -47,7 +47,7 @@ export default function NewJobsPage() {
   const jobTypes = [
     { key: "full-time", label: "Full-time" },
     { key: "part-time", label: "Part-time" },
-    { key: "contract", label: "Contract" },
+    { key: "remote", label: "Remote" },
     { key: "internship", label: "Internship" }
   ];
 
@@ -208,16 +208,22 @@ export default function NewJobsPage() {
                 <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
                     <div className="flex items-center justify-between">
                         <div>
-                            <Label>Remote Job</Label>
-                            <p className="text-xs text-zinc-500 mt-1">
+                            <label className="text-sm font-medium">Remote Job</label>
+                            <p className="mt-1 text-xs text-zinc-500">
                                 Candidates can work from anywhere.
                             </p>
                         </div>
 
-                        <Switch
-                            isSelected={isRemote}
-                            onValueChange={setIsRemote}
-                        />
+                        <Switch isSelected={isRemote} onChange={setIsRemote}>
+                            <Switch.Control>
+                                <Switch.Thumb />
+                            </Switch.Control>
+
+                            <Switch.Content>
+                                <Label className="text-sm">Remote</Label>
+                            </Switch.Content>
+                        </Switch>
+
                     </div>
                 </div>
 
