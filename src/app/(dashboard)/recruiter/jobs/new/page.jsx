@@ -58,17 +58,80 @@ export default function NewJobsPage() {
   ];
 
   const submit = (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const payload = {
-      ...form,
-      isRemote,
-      location: isRemote ? "Remote" : `${form.city}, ${form.country}`,
-      status: "active"
-    };
+  const newErrors = {};
 
-    console.log(payload);
+  if (!form.jobTitle.trim()) {
+    newErrors.jobTitle = "Job title is required";
+  }
+
+  if (!form.category) {
+    newErrors.category = "Please select a category";
+  }
+
+  if (!form.jobType) {
+    newErrors.jobType = "Please select a job type";
+  }
+
+  if (!form.salaryMin) {
+    newErrors.salaryMin = "Minimum salary is required";
+  }
+
+  if (!form.salaryMax) {
+    newErrors.salaryMax = "Maximum salary is required";
+  }
+
+  if (
+    form.salaryMin &&
+    form.salaryMax &&
+    Number(form.salaryMin) > Number(form.salaryMax)
+  ) {
+    newErrors.salaryMax =
+      "Maximum salary must be greater than minimum salary";
+  }
+
+  if (!isRemote) {
+    if (!form.city.trim()) {
+      newErrors.city = "City is required";
+    }
+
+    if (!form.country.trim()) {
+      newErrors.country = "Country is required";
+    }
+  }
+
+  if (!form.deadline) {
+    newErrors.deadline = "Application deadline is required";
+  }
+
+  if (!form.responsibilities.trim()) {
+    newErrors.responsibilities = "Responsibilities are required";
+  }
+
+  if (!form.requirements.trim()) {
+    newErrors.requirements = "Requirements are required";
+  }
+
+  setErrors(newErrors);
+
+  if (Object.keys(newErrors).length > 0) {
+    return;
+  }
+
+  const payload = {
+    ...form,
+    isRemote,
+    location: isRemote
+      ? "Remote"
+      : `${form.city}, ${form.country}`,
+    status: "active",
   };
+
+  console.log(payload);
+
+  // API call here
+};
 
   return (
     <div className="min-h-screen bg-[#0d0d0e] text-zinc-100 p-6 md:p-10">
@@ -84,42 +147,46 @@ export default function NewJobsPage() {
 
         <Card className="bg-[#161618] border border-zinc-800/60 p-6">
 
-          <Form onSubmit={submit} className="space-y-8">
+          <Form validationBehavior="aria" onSubmit={submit} className="space-y-8">
 
             {/* ================= JOB INFO ================= */}
-            <Fieldset label="Job Info" className="space-y-6">
+            <Fieldset aria-label="Job Info" className="space-y-6">
                 {/* JOB TITLE */}
                 <div>
                     <Label>Job Title</Label>
                     <Input
-                    placeholder="e.g. Senior Frontend Engineer"
-                    value={form.jobTitle}
-                    onChange={(e) => update("jobTitle", e.target.value)}
-                    className="w-full"
+                        placeholder="e.g. Senior Frontend Engineer"
+                        value={form.jobTitle}
+                        onChange={(e) => update("jobTitle", e.target.value)}
+                        className="w-full"
                     />
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                     {/* CATEGORY */}
                     <div>
-                        <Label>Job Category</Label>
-                        <Select>
+                        <Select
+                            aria-label="Job Category" 
+                            placeholder="Select job Category"
+                            value={form.category}
+                            onChange={(value) => update("category", value)}
+                        >
+                            <Label>Job Category</Label>
                             <Select.Trigger>
-                                <Select.Value placeholder="Select a category" />
+                                <Select.Value />
                                 <Select.Indicator />
                             </Select.Trigger>
 
                             <Select.Popover>
                                 <ListBox>
-                                {jobCategories.map((c) => (
+                                {jobCategories.map((cat) => (
                                     <ListBox.Item
-                                    key={c.key}
-                                    id={c.key}
-                                    textValue={c.label}
-                                    onAction={() => update("category", c.key)}
+                                        key={cat.key}
+                                        id={cat.key}
+                                        textValue={cat.label}
                                     >
-                                    {c.label}
-                                    <ListBox.ItemIndicator />
+                                        {cat.label}
+                                        <ListBox.ItemIndicator />
                                     </ListBox.Item>
                                 ))}
                                 </ListBox>
@@ -129,10 +196,16 @@ export default function NewJobsPage() {
 
                     {/* TYPE */}
                     <div>
-                        <Label>Job Type</Label>
-                        <Select>
+                        <Select
+                            aria-label="Job Type"
+                            placeholder="Select job type"
+                            value={form.jobType || null}
+                            onChange={(value) => update("jobType", value)}
+                        >
+                            <Label>Job Type</Label>
+
                             <Select.Trigger>
-                                <Select.Value placeholder="Select job type" />
+                                <Select.Value/>
                                 <Select.Indicator />
                             </Select.Trigger>
 
@@ -140,10 +213,9 @@ export default function NewJobsPage() {
                                 <ListBox>
                                 {jobTypes.map((t) => (
                                     <ListBox.Item
-                                    key={t.key}
-                                    id={t.key}
-                                    textValue={t.label}
-                                    onAction={() => update("jobType", t.key)}
+                                        key={t.key}
+                                        id={t.key}
+                                        textValue={t.label}
                                     >
                                     {t.label}
                                     <ListBox.ItemIndicator />
@@ -159,47 +231,51 @@ export default function NewJobsPage() {
                     <div className="flex flex-col gap-2">
                         <Label>Minimum Salary</Label>
                         <Input
-                        type="number"
-                        placeholder="50000"
-                        value={form.salaryMin}
-                        onChange={(e) => update("salaryMin", e.target.value)}
+                            aria-label="Minimum Salary"
+                            type="number"
+                            placeholder="50000"
+                            value={form.salaryMin}
+                            onChange={(e) => update("salaryMin", e.target.value)}
                         />
                     </div>
 
                     <div className="flex flex-col gap-2">
                         <Label>Maximum Salary</Label>
                         <Input
-                        type="number"
-                        placeholder="120000"
-                        value={form.salaryMax}
-                        onChange={(e) => update("salaryMax", e.target.value)}
+                            type="number"
+                            placeholder="120000"
+                            value={form.salaryMax}
+                            onChange={(e) => update("salaryMax", e.target.value)}
                         />
                     </div>
 
                     <div className="flex flex-col gap-2">
-                        <Label>Currency</Label>
 
-                        <Select>
-                        <Select.Trigger>
-                            <Select.Value placeholder="Select currency" />
-                            <Select.Indicator />
-                        </Select.Trigger>
+                        <Select
+                            aria-label="Currency"
+                            placeholder="Select currency"
+                             textValue={currencies.label}
+                        >
+                            <Label>Currency</Label>
+                            <Select.Trigger>
+                                <Select.Value/>
+                                <Select.Indicator />
+                            </Select.Trigger>
 
-                        <Select.Popover>
-                            <ListBox>
-                            {currencies.map((c) => (
-                                <ListBox.Item
-                                key={c.key}
-                                id={c.key}
-                                textValue={c.label}
-                                onAction={() => update("currency", c.key)}
-                                >
-                                {c.label}
-                                <ListBox.ItemIndicator />
-                                </ListBox.Item>
-                            ))}
-                            </ListBox>
-                        </Select.Popover>
+                            <Select.Popover>
+                                <ListBox>
+                                {currencies.map((c) => (
+                                    <ListBox.Item
+                                        key={c.key}
+                                        id={c.key}
+                                        textValue={c.label}
+                                    >
+                                    {c.label}
+                                    <ListBox.ItemIndicator />
+                                    </ListBox.Item>
+                                ))}
+                                </ListBox>
+                            </Select.Popover>
                         </Select>
                     </div>
                 </div>
@@ -214,7 +290,10 @@ export default function NewJobsPage() {
                             </p>
                         </div>
 
-                        <Switch isSelected={isRemote} onChange={setIsRemote}>
+                        <Switch
+                            isSelected={isRemote}
+                            onChange={(checked) => setIsRemote(checked)}
+                        >
                             <Switch.Control>
                                 <Switch.Thumb />
                             </Switch.Control>
@@ -262,7 +341,7 @@ export default function NewJobsPage() {
             </Fieldset>
 
             {/* ================= DESCRIPTION ================= */}
-            <Fieldset label="Job Description" className="space-y-6">
+            <Fieldset aria-label="Job Description" className="space-y-6">
                 <div className="flex flex-col gap-2">
                     <Label>Responsibilities</Label>
 
@@ -307,9 +386,7 @@ export default function NewJobsPage() {
                 Publish Job
               </Button>
             </div>
-
           </Form>
-
         </Card>
       </div>
     </div>
