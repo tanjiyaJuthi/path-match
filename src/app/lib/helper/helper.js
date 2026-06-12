@@ -24,15 +24,3 @@ export const getInitials = (name = "") =>
     .map(n => n[0])
     .join("")
     .toUpperCase();
-
-export const updateError = (key, value) => {
-  setForm((prev) => ({
-    ...prev,
-    [key]: value,
-  }));
-
-  setErrors((prev) => ({
-    ...prev,
-    [key]: "",
-  }));
-};
