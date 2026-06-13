@@ -1,5 +1,8 @@
 "use client";
 
+import { createJob } from "@/app/lib/actions/jobsAction";
+import { authClient } from "@/app/lib/auth-client";
+import { jobValidation } from "@/app/lib/validation/jobValidation";
 import {
   Button,
   Card,
@@ -13,40 +16,22 @@ import {
   Switch,
   TextArea,
   TextField,
+  toast,
 } from "@heroui/react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function NewJobsPage() {
+  const router = useRouter();
+  const [isPending, setIsPending] = useState(false);
   const [isRemote, setIsRemote] = useState(false);
   const [errors, setErrors] = useState({});
-  const [submitted, setSubmitted] = useState(false);
 
-  const [form, setForm] = useState({
-    jobTitle: "",
-    category: "",
-    jobType: "",
-    salaryMin: "",
-    salaryMax: "",
-    currency: "USD",
-    city: "",
-    country: "",
-    deadline: "",
-    responsibilities: "",
-    requirements: "",
-    benefits: "",
-  });
-
-  const updateError = (key, value) => {
-    setForm((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-
-    setErrors((prev) => ({
-      ...prev,
-      [key]: "",
-    }));
-  };
+  const [mockCompany] = useState({
+        name: "Acme Corp (Auto-filled)",
+        id: "company_123",
+        isApproved: true,
+    });
 
   const jobCategories = [
     { key: "tech", label: "Technology & Software" },
@@ -57,7 +42,6 @@ export default function NewJobsPage() {
   const jobTypes = [
     { key: "full-time", label: "Full-time" },
     { key: "part-time", label: "Part-time" },
-    { key: "remote", label: "Remote" },
     { key: "internship", label: "Internship" },
   ];
 
@@ -67,54 +51,60 @@ export default function NewJobsPage() {
     { key: "BDT", label: "BDT (৳)" },
   ];
 
-  const validateForm = () => {
-    const newErrors = {};
+  const submit = async (e) => {
+    e.preventDefault();
 
-    if (!form.jobTitle.trim()) newErrors.jobTitle = "Job title is required";
-    if (!form.category) newErrors.category = "Category is required";
-    if (!form.jobType) newErrors.jobType = "Job type is required";
-    if (!form.currency) newErrors.currency = "Currency is required";
-
-    if (!form.salaryMin) newErrors.salaryMin = "Minimum salary is required";
-    if (!form.salaryMax) newErrors.salaryMax = "Maximum salary is required";
-
-    if (!isRemote) {
-      if (!form.city.trim()) newErrors.city = "City is required";
-      if (!form.country.trim()) newErrors.country = "Country is required";
+    if (!mockCompany.isApproved) {
+      alert("Your company profile must be approved before you can post jobs.");
+      return;
     }
 
-    if (!form.deadline) newErrors.deadline = "Deadline is required";
+    const formData = new FormData(e.currentTarget);
 
-    if (!form.responsibilities.trim()) {
-      newErrors.responsibilities = "Responsibilities are required";
-    }
+    const formValues = Object.fromEntries(formData.entries());
 
-    if (!form.requirements.trim()) {
-      newErrors.requirements = "Requirements are required";
-    }
+    const newErrors = jobValidation(formValues, isRemote);
 
     setErrors(newErrors);
 
-    return Object.keys(newErrors).length === 0;
-  };
+    if (Object.keys(newErrors).length > 0) return;
 
-  const submit = (e) => {
-    e.preventDefault();
-
-    setSubmitted(true);
-
-    if (!validateForm()) return;
+    setIsPending(true);
 
     const payload = {
-      ...form,
+      ...formValues,
       isRemote,
-      location: isRemote ? "Remote" : `${form.city}, ${form.country}`,
+      location: isRemote
+        ? "Remote"
+        : `${formValues.city}, ${formValues.country}`,
       status: "active",
+      companyId: mockCompany.id,
     };
 
-    console.log(payload);
+    try {
+      const { data: tokenData } = await authClient.token();
 
-    // API call here
+      const res = await createJob(payload, tokenData);
+
+      if (res?.success) {
+        toast.success("Job Posted Successfully!");
+
+        setIsRemote(false);
+        setErrors({});
+
+        setTimeout(() => {
+          router.replace("/recruiter/jobs");
+          router.refresh();
+        }, 0);
+      } else {
+        toast.warning("Job Posted Failed!");
+      }
+    } catch (err) {
+      toast.warning("Something went wrong while posting job");
+      console.error(err);
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (
@@ -133,8 +123,8 @@ export default function NewJobsPage() {
             onSubmit={submit}
             className="space-y-8"
           >
-            {/* ================= JOB INFO ================= */}
             <Fieldset aria-label="Job Info" className="space-y-6">
+              
               {/* JOB TITLE */}
               <TextField
                 name="jobTitle"
@@ -144,12 +134,9 @@ export default function NewJobsPage() {
                 <Label>Job Title</Label>
                 <Input
                   placeholder="e.g. Senior Frontend Engineer"
-                  value={form.jobTitle}
-                  onChange={(e) => updateError("jobTitle", e.target.value)}
                   className="w-full"
                 />
-
-                <FieldError>{errors.jobTitle}</FieldError>
+                {errors.jobTitle && <FieldError className="text-xs text-danger mt-1">{errors.jobTitle}</FieldError>}
               </TextField>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -158,10 +145,8 @@ export default function NewJobsPage() {
                   <Select
                     isInvalid={!!errors.category}
                     isRequired
-                    aria-label="Job Category"
+                    name="category"
                     placeholder="Select job Category"
-                    value={form.category}
-                    onChange={(value) => updateError("category", value)}
                   >
                     <Label>Job Category</Label>
                     <Select.Trigger>
@@ -184,10 +169,7 @@ export default function NewJobsPage() {
                       </ListBox>
                     </Select.Popover>
                   </Select>
-
-                  {errors.category && (
-                    <FieldError>{errors.category}</FieldError>
-                  )}
+                  {errors.category && <FieldError>{errors.category}</FieldError>}
                 </div>
 
                 {/* TYPE */}
@@ -195,13 +177,10 @@ export default function NewJobsPage() {
                   <Select
                     isInvalid={!!errors.jobType}
                     isRequired
-                    aria-label="Job Type"
+                    name="jobType"
                     placeholder="Select job type"
-                    value={form.jobType || null}
-                    onChange={(value) => updateError("jobType", value)}
                   >
                     <Label>Job Type</Label>
-
                     <Select.Trigger>
                       <Select.Value />
                       <Select.Indicator />
@@ -222,54 +201,48 @@ export default function NewJobsPage() {
                       </ListBox>
                     </Select.Popover>
                   </Select>
-
                   {errors.jobType && <FieldError>{errors.jobType}</FieldError>}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* MIN SALARY */}
                 <TextField
                   name="salaryMin"
-                  type="number"
                   isRequired
                   className="flex flex-col gap-2"
                   isInvalid={!!errors.salaryMin}
                 >
                   <Label>Minimum Salary</Label>
                   <Input
-                    aria-label="Minimum Salary"
                     type="number"
                     placeholder="50000"
-                    value={form.salaryMin}
-                    onChange={(e) => updateError("salaryMin", e.target.value)}
                   />
-
-                  <FieldError>{errors.salaryMin}</FieldError>
+                  {errors.salaryMin && <FieldError>{errors.salaryMin}</FieldError>}
                 </TextField>
 
+                {/* MAX SALARY */}
                 <TextField
                   name="salaryMax"
-                  type="number"
                   isRequired
                   className="flex flex-col gap-2"
                   isInvalid={!!errors.salaryMax}
                 >
                   <Label>Maximum Salary</Label>
                   <Input
+                    type="number"
                     placeholder="120000"
-                    value={form.salaryMax}
-                    onChange={(e) => updateError("salaryMax", e.target.value)}
                   />
-
-                  <FieldError>{errors.salaryMax}</FieldError>
+                  {errors.salaryMax && <FieldError>{errors.salaryMax}</FieldError>}
                 </TextField>
 
+                {/* CURRENCY */}
                 <div className="flex flex-col gap-2">
                   <Select
                     isInvalid={!!errors.currency}
-                    aria-label="Currency"
-                    placeholder="Select currency"
+                    isRequired
                     name="currency"
+                    placeholder="Select Currency"
                   >
                     <Label>Currency</Label>
                     <Select.Trigger>
@@ -279,23 +252,20 @@ export default function NewJobsPage() {
 
                     <Select.Popover>
                       <ListBox>
-                        {currencies.map((c) => (
+                        {currencies.map((cur) => (
                           <ListBox.Item
-                            key={c.key}
-                            id={c.key}
-                            textValue={c.label}
+                            key={cur.key}
+                            id={cur.key}
+                            textValue={cur.label}
                           >
-                            {c.label}
+                            {cur.label}
                             <ListBox.ItemIndicator />
                           </ListBox.Item>
                         ))}
                       </ListBox>
                     </Select.Popover>
                   </Select>
-
-                  {errors.currency && (
-                    <FieldError>{errors.currency}</FieldError>
-                  )}
+                  {errors.currency && <FieldError>{errors.currency}</FieldError>}
                 </div>
               </div>
 
@@ -308,7 +278,6 @@ export default function NewJobsPage() {
                       Candidates can work from anywhere.
                     </p>
                   </div>
-
                   <Switch
                     isSelected={isRemote}
                     onChange={(checked) => setIsRemote(checked)}
@@ -316,7 +285,6 @@ export default function NewJobsPage() {
                     <Switch.Control>
                       <Switch.Thumb />
                     </Switch.Control>
-
                     <Switch.Content>
                       <Label className="text-sm">Remote</Label>
                     </Switch.Content>
@@ -324,7 +292,7 @@ export default function NewJobsPage() {
                 </div>
               </div>
 
-              {/* Location */}
+              {/* Location Fields */}
               {!isRemote && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <TextField
@@ -336,11 +304,8 @@ export default function NewJobsPage() {
                     <Label>City</Label>
                     <Input
                       placeholder="e.g. Dhaka"
-                      value={form.city}
-                      onChange={(e) => updateError("city", e.target.value)}
                     />
-
-                    <FieldError>{errors.city}</FieldError>
+                    {errors.city && (<FieldError>{errors.city}</FieldError>)}
                   </TextField>
 
                   <TextField
@@ -352,33 +317,27 @@ export default function NewJobsPage() {
                     <Label>Country</Label>
                     <Input
                       placeholder="e.g. Bangladesh"
-                      value={form.country}
-                      onChange={(e) => updateError("country", e.target.value)}
                     />
-                    <FieldError>{errors.country}</FieldError>
+                    {errors.country && (<FieldError>{errors.country}</FieldError>)}
                   </TextField>
                 </div>
               )}
 
+              {/* DEADLINE */}
               <TextField
                 isRequired
                 name="deadline"
-                type="date"
                 className="flex flex-col gap-2"
                 isInvalid={!!errors.deadline}
               >
                 <Label>Application Deadline</Label>
-
                 <Input
-                  value={form.deadline}
-                  onChange={(e) => updateError("deadline", e.target.value)}
+                  type="date"
                 />
-
-                <FieldError>{errors.deadline}</FieldError>
+                {errors.deadline && (<FieldError>{errors.deadline}</FieldError>)}
               </TextField>
             </Fieldset>
 
-            {/* ================= DESCRIPTION ================= */}
             <Fieldset aria-label="Job Description" className="space-y-6">
               <TextField
                 isRequired
@@ -387,18 +346,12 @@ export default function NewJobsPage() {
                 isInvalid={!!errors.responsibilities}
               >
                 <Label>Responsibilities</Label>
-
                 <TextArea
-                  placeholder="Describe day-to-day responsibilities, key tasks, team collaboration, ownership areas, and expected outcomes..."
-                  value={form.responsibilities}
-                  onChange={(e) =>
-                    updateError("responsibilities", e.target.value)
-                  }
+                  placeholder="Describe day-to-day responsibilities..."
                   minrows={5}
                   className="w-full"
                 />
-
-                <FieldError>{errors.responsibilities}</FieldError>
+                {errors.responsibilities && (<FieldError>{errors.responsibilities}</FieldError>)}
               </TextField>
 
               <TextField
@@ -408,26 +361,18 @@ export default function NewJobsPage() {
                 isInvalid={!!errors.requirements}
               >
                 <Label>Requirements</Label>
-
                 <TextArea
-                  placeholder="List required skills, technologies, years of experience, qualifications, certifications, and other prerequisites..."
-                  value={form.requirements}
-                  onChange={(e) => updateError("requirements", e.target.value)}
+                  placeholder="List required skills..."
                   minrows={5}
                   className="w-full"
                 />
-
-                <FieldError>{errors.requirements}</FieldError>
+                {errors.requirements && (<FieldError>{errors.requirements}</FieldError>)}
               </TextField>
 
               <TextField name="benefits" className="flex flex-col gap-2">
                 <Label>Benefits (Optional)</Label>
-
                 <TextArea
-                  placeholder="Health insurance, annual bonuses, flexible working hours, remote work allowance, learning budget, paid leave, etc."
-                  value={form.benefits}
-                  onChange={(e) => updateError("benefits", e.target.value)}
-                  minrows={4}
+                  placeholder="Health insurance, allowances, etc."
                   className="w-full"
                 />
               </TextField>
@@ -436,10 +381,11 @@ export default function NewJobsPage() {
             {/* SUBMIT */}
             <div className="flex justify-end">
               <Button
+                isDisabled={isPending}
                 type="submit"
                 className="rounded-lg bg-white text-black px-6"
               >
-                Publish Job
+                {isPending ? "Publishing..." : "Publish Job"}
               </Button>
             </div>
           </Form>

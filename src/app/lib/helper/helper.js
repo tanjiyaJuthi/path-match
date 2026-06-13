@@ -24,3 +24,8 @@ export const getInitials = (name = "") =>
     .map(n => n[0])
     .join("")
     .toUpperCase();
+
+export const handleSelect = (setter) => (key) => (keys) => {
+  const value = Array.from(keys)[0];
+  setter(key, value);
+};
