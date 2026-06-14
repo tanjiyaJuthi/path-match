@@ -4,7 +4,7 @@ const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
 
 export const createJob = async (newJobData, tokenData) => {
     try {
-        const res = await fetch(`${baseUrl}/api/job`, {
+        const res = await fetch(`${baseUrl}/api/jobs`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -1,7 +1,14 @@
-const RecruiterCompanyPage = () => {
+import { getRecruiterCompany } from "@/app/lib/api/companies";
+import CompanyProfile from "@/app/lib/client/CompanyProfile";
+import { getUserSession } from "../../../lib/core/session";
+
+const RecruiterCompanyPage = async () => {
+    const user = await getUserSession();
+    const company = await getRecruiterCompany(user?.id);
+
     return (
         <div>
-            <h2>Company Profile</h2>
+            <CompanyProfile recruiter={user} recruiterCompany={company}></CompanyProfile>
         </div>
     );
 };
